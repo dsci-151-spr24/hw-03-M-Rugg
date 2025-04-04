@@ -102,15 +102,57 @@ For example, if the response is 2.5 hrs, this would be recorded as `emailhr = 2`
 
 3.  Create a new variable called `email` that combines these two variables to reports the number of minutes the respondents spend on email weekly.
 
+``` {r}
+gss16 <- gss16 %>%         #writes the new variable to the dataframe
+ mutate(email = emailhr * 60 + emailmin) #creates a new variable that reports the total number of minutes spent on email (combines emailhr and emailmin into one variable)
+```
+
 4.  Visualize the distribution of this new variable.
     Find the mean and the median number of minutes respondents spend on email weekly.
     Is the mean or the median a better measure of the typical among of time Americans spend on email weekly?
     Why?
 
+
+``` {r}
+
+gss16 %>%
+  ggplot(mapping = aes(x = email)) +  
+  geom_histogram(binwidth =250) +   #creates histogram
+  labs(title = "Weekly Time Spent on Email by Americans", x = "Minutes", y = "Counts")            #adds labels
+
+```
+
+```{r}
+
+gss16 %>%
+  filter(!is.na(email)) %>%   #removes na values since they will interfer with summary statistics
+  summarise(median = median(email), mean = mean(email))
+
+```
+
+***In this case, the median (120 min) is a better measure of the typical amount of time spent by Americans on email since it is less affected by extreme scores than the mean (416.84 min). From the visualization, one can see that the data is heavily skewed to the high end. The mean is more heavily affected by these extreme scores than the median making it less representative of the typical amount of time.***
+
 5.  Create another new variable, `snap_insta` that is coded as "Yes" if the respondent reported using any of Snapchat (`snapchat`) or Instagram (`instagrm`), and "No" if not.
     If the recorded value was `NA` for both of these questions, the value in your new variable should also be `NA`.
 
+```{r}
+
+gss16 <- gss16 %>%          #saves the variable
+  mutate(snap_insta =       #creates a new variable
+           if_else(snapchat == "Yes" | instagrm == "Yes", "Yes",     #if either snapchat or instagrm are "Yes" then snap_insta will be "Yes"
+                   if_else(snapchat == "No" | instagrm == "No", "No", "" )))         # if either snapchat or instagrm are "No" (and no previous "Yes" for the other variable) then snap_insta will be "No", else N/A
+```
+
 6.  Calculate the percentage of Yes's for `snap_insta` among those who answered the question, i.e. excluding `NA`s.
+
+``` {r}
+snap_insta_count_table <- table(gss16$snap_insta) #creates a table of counts (NAs are automatically excluded)
+
+snap_insta_prop <- prop.table(snap_insta_count_table)           #converts table to proportions
+
+round(snap_insta_prop * 100, digits = 2)
+```
+***37.46% of the people who answered the question responded `Yes` to using either snapchat or instagrm.***
 
 7.  What are the possible responses to the question *Last week were you working full time, part time, going to school, keeping house, or what?* and how many respondents chose each of these answers?
     Note that this information is stored in the `wrkstat` variable.
