@@ -52,6 +52,8 @@ You can load them by running the following in your Console:
 ```{r load-packages, message = FALSE, eval = TRUE}
 library(tidyverse)
 library(dsbox)
+library(tidymodels)
+library(flextable)
 ```
 
 ## Data
@@ -157,12 +159,72 @@ round(snap_insta_prop * 100, digits = 2)
 7.  What are the possible responses to the question *Last week were you working full time, part time, going to school, keeping house, or what?* and how many respondents chose each of these answers?
     Note that this information is stored in the `wrkstat` variable.
 
+``` {r}
+gss16 %>%
+  count(wrkstat) %>%
+  arrange(desc(n))
+```
+***The possible responses to the question were `Working fulltime` (1321	respondents), `Retired`	(574 respondents), `Working parttime` (345 respondents), `Keeping house` (284 respondents), `Unempl, laid off` (118	respondents), `Other` (89 respondents), `School` (76 respondents), and `Temp not working` (57 respondents). 3 respondents left the question blank (`NA`).***
+
 8.  Fit a model predicting `email` (number of minutes per week spent on email) from `educ` (number of years of education), `wrkstat`, and `snap_insta`.
     Interpret the slopes for each of these variables.
+
+``` {r}
+#find out if the data is linear or not
+
+#gss16 %>%
+  #ggplot(aes(x = educ, y = email)) +
+  #geom_point(alpha = 0.25) +
+  #geom_smooth(method = "lm", se = FALSE, color = "#CC5500") +
+  #xlab("Years of Education") +
+  #ylab("Minutes per Week Spent on Email") +
+  #ggtitle("Scatter Plot of Years of Education to Minutes Spent on Email per Week")
+
+email_educ_fit <- linear_reg() %>%   #saves regression data
+  set_engine("lm") %>%               #sets the engine to linear
+  fit(email ~ educ + wrkstat + snap_insta, data = gss16) # predicts email from educ, wrkstat, and snap_insta
+
+email_educ_fit %>% tidy() %>% flextable() #creates a cleaner output
+
+```
+
+**Slope - educ:** *All else held constant, for each additional year of education, we would expect time spent on email to be higher by 29.63 min.*
+
+
+**Slope - wrskstat:** 
+
+*All else held constant, people with a wrkstat of other, on average, spend 33.06 min more on email than those with a wrkstat of keeping house.*
+
+*All else held constant, people with a wrkstat of retired, on average, spend 68.23 min more on email than those with a wrkstat of keeping house.*
+
+*All else held constant, people with a wrkstat of school (students), on average, spend 123.81 min less on email than those with a wrkstat of keeping house.*
+
+*All else held constant, people with a wrkstat of "Temp not working", on average, spend 73.71 min less on email than those with a wrkstat of keeping house.*
+
+*All else held constant, people with a wrkstat of "Unempl, laid off",  on average, spend 118.35 min more on email than those with a wrkstat of keeping house.*
+
+*All else held constant, people with a wrkstat of working fulltime, on average, spend 366.4 min more on email than those with a wrkstat of keeping house.*
+
+*All else held constant, people with a wrkstat of workign parttime, on average, spend 18.90 more min on email than those with a wrkstat of keeping house.*
+
+
+**Slope - snap_insta:** *All else held constant, people who use snapchat and instagrm, on average, spend 149.96 min more on email than those who don't use either.*
 
 9.  Create a predicted values vs. residuals plot for this model.
     Are there any issues with the model?
     If yes, describe them.
+    
+``` {r}
+
+email_educ_fit_aug <- augment(email_educ_fit$fit)
+
+ggplot(email_educ_fit_aug, mapping = aes(x = .fitted, y = .resid)) +
+ geom_point(alpha = 0.5) +
+ geom_hline(yintercept = 0, color = "gray", lty = "dashed") +
+ labs(x = "Predicted email", y = "Residuals", title = "Scatterplot of the Residuals for the Email Prediction Model")
+```
+
+***Yes, the plot of the residuals indicates that the model has a problem. The model uses a linear relationship, however, the plot of the residuals indicates that the relationship is non-linear. If it was linear, the residuals would be randomly distributed around 0 with no distinguishable pattern. However, the plot shows a negative, or fan-shaped pattern. To correct for this, the natural log of the data may need to be used.***
 
 🧶 ✅ ⬆️ Knit, *commit, and push your changes to GitHub with an appropriate commit message. Make sure to commit and push all changed files so that your Git pane is cleared up afterwards.*
 
